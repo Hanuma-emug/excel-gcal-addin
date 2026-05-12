@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sign in with Google</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #f3f2f1;
+      color: #201f1e;
+    }
+    .card {
+      background: #fff;
+      border-radius: 4px;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12);
+      max-width: 320px;
+      width: 90%;
+    }
+    h2 { font-size: 16px; margin-bottom: 8px; }
+    p  { font-size: 13px; color: #605e5c; margin-bottom: 20px; }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid #e1dfdd;
+      border-top-color: #0078d4;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #a4262c; font-size: 13px; margin-top: 12px; }
+  </style>
+  <!-- Office.js for messageParent -->
+  <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async></script>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner" id="spinner"></div>
+    <h2>Connecting to Google Calendar</h2>
+    <p id="status-text">Opening Google sign-in...</p>
+    <div class="error hidden" id="error-text"></div>
+  </div>
+
+  <script>
+    /* Read client_id from URL query string */
+    const params   = new URLSearchParams(window.location.search);
+    const clientId = params.get('client_id');
+
+    if (!clientId) {
+      showError('No Client ID provided. Please go back and enter your Google Client ID.');
+    }
+
+    /* Wait for both Office.js and Google GIS to load */
+    let officeReady  = false;
+    let googleReady  = false;
+
+    Office.onReady(function () {
+      officeReady = true;
+      tryInit();
+    });
+
+    /* Google GIS calls this when the library is loaded */
+    window.onGoogleLibraryLoad = function () {
+      googleReady = true;
+      tryInit();
+    };
+
+    function tryInit () {
+      if (!officeReady || !googleReady) return;
+      if (!clientId) return;
+
+      document.getElementById('status-text').textContent = 'Please complete sign-in in the Google window...';
+
+      try {
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email',
+          callback: function (response) {
+            if (response.error) {
+              showError('Google sign-in error: ' + response.error);
+              return;
+            }
+
+            /* Fetch the user's email using the token */
+            fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { 'Authorization': 'Bearer ' + response.access_token }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (info) {
+              Office.context.ui.messageParent(JSON.stringify({
+                type:  'token',
+                token: response.access_token,
+                email: info.email || ''
+              }));
+            })
+            .catch(function () {
+              /* Even without email, pass the token back */
+              Office.context.ui.messageParent(JSON.stringify({
+                type:  'token',
+                token: response.access_token,
+                email: ''
+              }));
+            });
+          }
+        });
+
+        /* Request the token — triggers Google popup/redirect */
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+
+      } catch (err) {
+        showError('Failed to initialise Google sign-in: ' + err.message);
+      }
+    }
+
+    function showError (msg) {
+      document.getElementById('spinner').style.display    = 'none';
+      document.getElementById('status-text').textContent  = 'Something went wrong.';
+      const errEl = document.getElementById('error-text');
+      errEl.textContent = msg;
+      errEl.classList.remove('hidden');
+
+      /* Send error back to task pane */
+      if (officeReady) {
+        Office.context.ui.messageParent(JSON.stringify({ type: 'error', message: msg }));
+      }
+    }
+  </script>
+</body>
+</html>

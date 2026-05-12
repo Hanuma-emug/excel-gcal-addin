@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GCal Reminders</title>
+  <link rel="stylesheet" href="taskpane.css" />
+  <!-- Office.js must be loaded first -->
+  <script src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">GCal Reminders</div>
+    <div class="header-sub">Push follow-up dates to Google Calendar</div>
+  </div>
+
+  <!-- Step indicators -->
+  <div class="steps-bar">
+    <div class="step-dot active" id="dot-1">1</div>
+    <div class="step-line"></div>
+    <div class="step-dot" id="dot-2">2</div>
+    <div class="step-line"></div>
+    <div class="step-dot" id="dot-3">3</div>
+    <div class="step-line"></div>
+    <div class="step-dot" id="dot-4">4</div>
+  </div>
+
+  <!-- ── STEP 1: Connect Google ── -->
+  <div class="step-panel" id="panel-1">
+    <div class="panel-title">Connect Google Calendar</div>
+    <div class="panel-desc">Enter your Google OAuth Client ID. This stays in your browser — it is never sent anywhere else.</div>
+
+    <label class="field-label">Google Client ID</label>
+    <input type="text" id="client-id-input" placeholder="xxxxx.apps.googleusercontent.com" />
+    <div class="hint">
+      Don't have one? See <a href="https://developers.google.com/calendar/api/quickstart/js" target="_blank">how to get a free Client ID</a> (5 min setup).
+    </div>
+
+    <button class="btn-primary" id="btn-connect">Connect Google Calendar</button>
+    <div class="status-msg" id="connect-status"></div>
+  </div>
+
+  <!-- ── STEP 2: Read Sheet ── -->
+  <div class="step-panel hidden" id="panel-2">
+    <div class="panel-title">Read your sheet</div>
+    <div class="panel-desc">Make sure your marketing data sheet is active, then click below.</div>
+
+    <div class="connected-badge">
+      <span class="badge-dot"></span>
+      <span id="connected-email">Connected to Google</span>
+    </div>
+
+    <button class="btn-primary" id="btn-read">Read active sheet</button>
+    <div class="status-msg" id="read-status"></div>
+
+    <div class="data-preview hidden" id="data-preview">
+      <div class="preview-stat">
+        <span id="row-count">0</span> rows found
+      </div>
+      <div class="preview-cols" id="preview-cols"></div>
+      <button class="btn-secondary" id="btn-to-map">Map columns &rarr;</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Map Columns ── -->
+  <div class="step-panel hidden" id="panel-3">
+    <div class="panel-title">Map your columns</div>
+    <div class="panel-desc">Tell the add-in which column is which. Only Date is required.</div>
+
+    <label class="field-label required">Follow-up date column</label>
+    <select id="map-date"></select>
+
+    <label class="field-label">Company column</label>
+    <select id="map-company"></select>
+
+    <label class="field-label">Contact name column</label>
+    <select id="map-contact"></select>
+
+    <label class="field-label">Phone column</label>
+    <select id="map-phone"></select>
+
+    <label class="field-label">Notes / status column</label>
+    <select id="map-notes"></select>
+
+    <div class="divider"></div>
+
+    <div class="panel-title" style="margin-top:0">Event title template</div>
+    <div class="panel-desc">Use {column name} as a placeholder. Example: <code>Follow up: {Contact} @ {Company}</code></div>
+    <input type="text" id="title-template" value="Follow up: {Contact} @ {Company}" />
+
+    <label class="field-label" style="margin-top:12px">Reminder alert</label>
+    <select id="reminder-select">
+      <option value="1440">1 day before</option>
+      <option value="120">2 hours before</option>
+      <option value="60">1 hour before</option>
+      <option value="30">30 minutes before</option>
+      <option value="0">At the time</option>
+    </select>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="skip-past" checked />
+      <span>Skip rows where follow-up date is in the past</span>
+    </label>
+
+    <button class="btn-primary" id="btn-to-preview">Preview events &rarr;</button>
+  </div>
+
+  <!-- ── STEP 4: Preview & Push ── -->
+  <div class="step-panel hidden" id="panel-4">
+    <div class="panel-title">Review &amp; push</div>
+    <div class="panel-desc">Check the events below, then push to Google Calendar.</div>
+
+    <div class="summary-bar" id="summary-bar"></div>
+
+    <div class="event-list" id="event-list"></div>
+
+    <button class="btn-primary" id="btn-push">Push to Google Calendar</button>
+    <button class="btn-secondary" id="btn-back">Back</button>
+
+    <div class="progress-section hidden" id="progress-section">
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <div class="progress-label" id="progress-label">0 / 0 done</div>
+    </div>
+
+    <div class="result-list" id="result-list"></div>
+  </div>
+
+  <script src="taskpane.js"></script>
+</body>
+</html>
